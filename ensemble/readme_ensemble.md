@@ -4,7 +4,7 @@ The files in this directory are for ensembling the results of two models.
 
 According to the experiment logs, the results are as follows:
 
-For dinov2_swin, the best validation results are:
+For TBSD model, the best validation results are:
 
 <img src="./mAPs.png" alt="image-20231027143757322" style="zoom:50%;" />
 
@@ -29,7 +29,7 @@ However, the model utilizes dinov2's zero-shot generalization ability well, achi
 
 Therefore, we ensemble the results to leverage the high agent and loc metrics from only_dinov2.
 
-During experiments, using only the TBSD model (no tricks or post-processing besides NMS) achieved around 0.262 on the final evaluation.
+During experiments, using only the TBSD model (no tricks or post-processing besides NMS) achieved around 0.262 on the final evaluation. Actually, we believe that training with larger seq_len and batch_size (e.g., seq_len=32, batch_size=32) would yield further improvements. Even without these adjustments, training for more epochs, such as 40 epochs, may also lead to significant enhancements. This is because in previous experiments, the model has shown sensitivity to the seq_len parameter.
 
 By incorporating only_dinov2's results, this can be improved to around 0.27.
 
