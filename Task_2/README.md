@@ -1,5 +1,4 @@
 # ROAD-R Challenge Task-2
-This repository contains baseline code for the first and second tasks of the [ROAD-R Challenge](https://sites.google.com/view/road-r/).
 The code is built on top of [3D-RetinaNet for ROAD](https://github.com/gurkirt/road-dataset).
 
 Based on the information provided, for Task 2, participants are allowed to train their models using the annotations from all 18 videos in the training and validation sets：
@@ -105,7 +104,7 @@ python post_processing_raw.py --file_path="yourpath_of_pkl" --requirements_path=
 
 [1] [road-dataset](https://github.com/gurkirt/road-dataset)
 
-[2] [ROAD-R Challenge](https://sites.google.com/view/road-r/)
+[2] [ROAD-R-2023-Challenge](https://github.com/mihaela-stoian/ROAD-R-2023-Challenge)
 
 [3] [3D-RetinaNet for ROAD](https://github.com/gurkirt/road-dataset)
 
