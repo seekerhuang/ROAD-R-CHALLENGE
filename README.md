@@ -1,5 +1,4 @@
 # ROAD-R Challenge
-This repository contains baseline code for the first and second tasks of the [ROAD-R Challenge](https://sites.google.com/view/road-r/).
 The code is built on top of [3D-RetinaNet for ROAD](https://github.com/gurkirt/road-dataset).
 
 The first task requires developing models for scenarios where only little annotated data is available at training time. 
@@ -100,7 +99,7 @@ There are readme instructions in the `environment`folder and `ensemble` folder t
 
 [1] [road-dataset](https://github.com/gurkirt/road-dataset)
 
-[2] [ROAD-R Challenge](https://sites.google.com/view/road-r/)
+[2] [ROAD-R-2023-Challenge](https://github.com/mihaela-stoian/ROAD-R-2023-Challenge)
 
 [3] [3D-RetinaNet for ROAD](https://github.com/gurkirt/road-dataset)
 
