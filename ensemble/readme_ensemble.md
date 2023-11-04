@@ -6,17 +6,17 @@ According to the experiment logs, the results are as follows:
 
 For dinov2_swin, the best validation results are:
 
-<img src="C:\Users\belongTH\AppData\Roaming\Typora\typora-user-images\image-20231027143757322.png" alt="image-20231027143757322" style="zoom:50%;" />
+<img src="./mAPs.png" alt="image-20231027143757322" style="zoom:50%;" />
 
-<img src="F:\A-ROAD-FIX\root\MMACV-ROAD-CHALLENGE-main\road-_2\Task_1\ensemble\action.png" alt="image-20231027144359353" style="zoom:50%;" />
+<img src="./action.png" alt="image-20231027144359353" style="zoom:50%;" />
 
-<img src="F:\A-ROAD-FIX\root\MMACV-ROAD-CHALLENGE-main\road-_2\Task_1\ensemble\agent.png" alt="image-20231027144423148" style="zoom:50%;" />
+<img src="./agent.png" alt="image-20231027144423148" style="zoom:50%;" />
 
 
 
-<img src="F:\A-ROAD-FIX\root\MMACV-ROAD-CHALLENGE-main\road-_2\Task_1\ensemble\agentness.png" alt="image-20231027144444408" style="zoom:50%;" />
+<img src="./agentness.png" alt="image-20231027144444408" style="zoom:50%;" />
 
-<img src="F:\A-ROAD-FIX\root\MMACV-ROAD-CHALLENGE-main\road-_2\Task_1\ensemble\location.png" alt="image-20231027144511655" style="zoom:50%;" />
+<img src="./location.png" alt="image-20231027144511655" style="zoom:50%;" />
 
 |              maps@50               | agent_ness |    agent    |     loc     | action  |
 | :--------------------------------: | :--------: | :---------: | :---------: | :-----: |
