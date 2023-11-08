@@ -308,22 +308,6 @@ class YOLOPAFPN3DDINO(nn.Module):
         return cls_token,outputs
     
 
-
-            
-
-
-
-
-
-
-
-# config_path = '/root/miniconda3/lib/python3.8/site-packages/mmaction/.mim/configs/recognition/mvit/mvit-small-p244_k400-pre_16xb16-u16-100e_sthv2-rgb.py'
-# checkpoint_path = '/root/autodl-tmp/road-dataset-master/ROAD-R-2023-Challenge-main_me/pretrainmodel/mvit-small-p244_u16_sthv2-rgb_20221021-65ecae7d.pth' # 可以是本地路径
-
-# # 从配置文件和权重文件中构建模型
-# modelmvit = init_recognizer(config_path, checkpoint_path, device="cpu").backbone.cuda()
-
-
 # class videomvit(nn.Module):
 #     def __init__(self):
 #         super(videomvit,self).__init__()
@@ -332,9 +316,6 @@ class YOLOPAFPN3DDINO(nn.Module):
 #     def forward(self, x):
 #         x=self.flowbackbone(x)
 #         return x
-
-
-
 
 
 class viedoswinFlow(nn.Module):
@@ -480,10 +461,6 @@ class viedoswinRGB(nn.Module):
         self.frozen_stages = frozen_stages
         self.window_size = window_size
         self.patch_size = patch_size
-
-
-
-
         self.patch_norm = True
         self.patch_size=patch_size
         self.window_size=window_size
@@ -580,9 +557,6 @@ class viedoDINORGB(nn.Module):
         for param in self.dinobackbone.parameters():
             param.requires_grad = False
     
-
-
-
     def forward(self, x):
         x_splits=torch.chunk(x, x.size(2), dim=2) 
         out_splits_cls = []
@@ -593,15 +567,12 @@ class viedoDINORGB(nn.Module):
             out_splits_cls.append(out[0][0])
             out_splits_feat.append(out[0][1])
 
-        # 拼接回原始形状
+        # concat all
         out_cls_token = torch.stack(out_splits_cls, dim=1) # end cls token dino
         out_feat = torch.stack(out_splits_feat, dim=2)# end feat dino 1024 t 46 46 if 640*640
 
         
         return [out_cls_token,out_feat]
-
-
-
 
 
                                        
