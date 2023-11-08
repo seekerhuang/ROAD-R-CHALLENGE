@@ -22,7 +22,7 @@ from .yolox3dmodels.network_blocks import BaseConv3D, CSPLayer, DWConv,CSPLayer3
 
 logger = lutils.get_logger(__name__)
 
-### Download weights from https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
+
 def conv3x3(in_planes, out_planes, stride=1, padding=1, bias=False):
     """3x3 convolution with padding"""
     return nn.Conv3d(in_planes, out_planes, kernel_size=(1, 3, 3), stride=(1, stride, stride),
@@ -31,11 +31,6 @@ def conv3x3(in_planes, out_planes, stride=1, padding=1, bias=False):
 
 def conv1x1(in_channel, out_channel):
     return nn.Conv3d(in_channel, out_channel, kernel_size=1, stride=1, padding=0, bias=False)
-
-
-
-# swinmodel=swin_transformer.SwinTransformer3D()
-
 
 
 #good
@@ -117,14 +112,6 @@ class ResNetFPN(nn.Module):
         
         self.swinaclayer4=swin_transformer.BasicLayer(dim=embed_dim*2**3,depth=2,num_heads=48,window_size=(8,7,7),
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:3]):sum(depths[:3 + 1])],downsample=swin_transformer.PatchMerging if 3<self.num_layers-1 else None)#1536 4 7 7
-        
-
-        
-
-
-
-
-
         self.norm3 = nn.LayerNorm(self.num_features)
 
         self._freeze_stages()
@@ -216,7 +203,6 @@ class TSAttBlock(nn.Module):
 
 
 
-
 class ChannAT(nn.Module):
     """Constructs a Channel atte module.
     Args:
@@ -244,7 +230,6 @@ class ChannAT(nn.Module):
         y = self.sigmoid(y)
 
         return x * y + x
-
 
 
 
@@ -462,23 +447,6 @@ class YOLOPAFPN3D(nn.Module):
         return outputs
     
 
-
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class viedoswinFlow(nn.Module):
 
     def __init__(self,  pretrained=None,
@@ -553,17 +521,6 @@ class viedoswinFlow(nn.Module):
 
         self._freeze_stages()
         
-        
-        # self.upcov1=nn.Conv3d(384, 256, kernel_size=1, stride=1, padding=0, bias=False)
-        # self.upcov2=nn.ConvTranspose3d(768, 512, kernel_size=(1,2,2), stride=(1,2,2))
-        # self.upcov3=nn.ConvTranspose3d(1536, 1024, kernel_size=(1,2,2), stride=(1,2,2))
-        # self.upcov4=nn.Conv3d(1536, 2048, kernel_size=1, stride=1, padding=0, bias=False)
-
-        # self.upcov2nonlocal1=pvl.create_nonlocal(dim_in=768,dim_inner=768//2)
-        # self.upcov2nonlocal2=pvl.create_nonlocal(dim_in=512,dim_inner=512//2)
-
-        # self.upcov3nonlocal1=pvl.create_nonlocal(dim_in=1536,dim_inner=1536//2)
-        # self.upcov3nonlocal2=pvl.create_nonlocal(dim_in=1024,dim_inner=1024//2)
 
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
@@ -584,29 +541,18 @@ class viedoswinFlow(nn.Module):
 
     def forward(self, x):
         x=self.patch_embed(x)
-        # print(x.shape)
         x=self.pos_drop(x)
-        # print(x.shape)
         x,xbfd1=self.swinaclayer1(x)
-        # print(x.shape)
-        # x=self.patchmerge1(x)
+
         x,xbfd2=self.swinaclayer2(x)
 
-        # x=self.patchmerge2(x)
         x,xbfd3=self.swinaclayer3(x)
 
-        # x=self.patchmerge3(x)
         x,xbfd4=self.swinaclayer4(x)
         x = rearrange(x, 'n c d h w -> n d h w c')
         x = self.norm3(x)
         x = rearrange(x, 'n d h w c -> n c d h w')
 
-
-        #up can be pretrained
-
-        # u2=self.upcov2(x2)#512 4 28 28
-        # u3=self.upcov3(x3)#1024 4 14 14
-        # u4=self.upcov4(x)#2048 4 7 7  x4
         return [xbfd2,xbfd3,x]
 
 
@@ -633,12 +579,7 @@ class viedoswinRGB(nn.Module):
         self.inplanes = 64
         super(viedoswinRGB, self).__init__()
     
-    
-
-
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]  # stochastic depth decay rule
-
-
         self.pretrained = pretrained
         self.pretrained2d = pretrained2d
         self.num_layers = len(depths)
@@ -647,10 +588,6 @@ class viedoswinRGB(nn.Module):
         self.frozen_stages = frozen_stages
         self.window_size = window_size
         self.patch_size = patch_size
-
-
-
-
         self.patch_norm = True
         self.patch_size=patch_size
         self.window_size=window_size
@@ -678,7 +615,6 @@ class viedoswinRGB(nn.Module):
         
         self.swinaclayer4=swin_transformer.BasicLayer(dim=embed_dim*2**3,depth=depths[3],num_heads=num_heads[3],window_size=self.window_size,
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:3]):sum(depths[:3 + 1])],downsample=swin_transformer.PatchMerging if 3<self.num_layers-1 else None)#1536 4 7 7
-        # self.layers.append(layer)
 
         self.norm3 = nn.LayerNorm(self.num_features)
 
@@ -715,15 +651,7 @@ class viedoswinRGB(nn.Module):
 
 
         return [xbfd2,xbfd3,x]
-
-
-
-
-
-
-
-
-                                       
+                            
     def load_my_state_dict(self, state_dict):
         logger.info('**LOAD STAE DICTIONARY FOR WEIGHT INITLISATIONS**')
         own_state = self.state_dict()
