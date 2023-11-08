@@ -118,14 +118,6 @@ class ResNetFPN(nn.Module):
         
         self.swinaclayer4=swin_transformer.BasicLayer(dim=embed_dim*2**3,depth=2,num_heads=48,window_size=(8,7,7),
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:3]):sum(depths[:3 + 1])],downsample=swin_transformer.PatchMerging if 3<self.num_layers-1 else None)#1536 4 7 7
-        # self.layers.append(layer)
-        
-
-        
-
-
-
-
 
         self.norm3 = nn.LayerNorm(self.num_features)
         self.norm3.eval()
@@ -133,7 +125,6 @@ class ResNetFPN(nn.Module):
                     param.requires_grad = False
 
         self._freeze_stages()
-        
         
         self.upcov1=nn.ConvTranspose3d(384, 256, kernel_size=(2,2,2), stride=(2,2,2))
         self.upcov2=nn.ConvTranspose3d(768, 512, kernel_size=(2,2,2), stride=(2,2,2))
@@ -145,12 +136,7 @@ class ResNetFPN(nn.Module):
         self.layer1 = self._make_layer(
             block, 64, num_blocks[0], temp_kernals=model_3d_layers[0], nl_inds=non_local_inds[0])
         self.MODEL_TYPE = args.MODEL_TYPE
-        
-        # if args.model_subtype in ['C2D','RCN','CLSTM','RCLSTM','CGRU','RCGRU']:
-        #     self.pool2 = None
-        # else:
-        #     self.pool2 = nn.MaxPool3d(kernel_size=(
-        #         2, 1, 1), stride=(2, 1, 1), padding=(0, 0, 0))
+
         self.pool2=None
         self.layer2 = self._make_layer(
             block, 128, num_blocks[1], stride=2, temp_kernals=model_3d_layers[1], nl_inds=non_local_inds[1])
@@ -158,9 +144,6 @@ class ResNetFPN(nn.Module):
             block, 256, num_blocks[2], stride=2, temp_kernals=model_3d_layers[2], nl_inds=non_local_inds[2])
         self.layer4 = self._make_layer(
             block, 512, num_blocks[3], stride=2, temp_kernals=model_3d_layers[3], nl_inds=non_local_inds[3])
-
-        #self.avgpool = nn.AvgPool2d(7, stride=1)
-        #self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         if self.MODEL_TYPE == 'SlowFast':
             self.conv6 = conv3x3(2304, 256, stride=2, padding=1)  # P6
@@ -180,7 +163,6 @@ class ResNetFPN(nn.Module):
             self.conv6 = conv3x3(512 * block.expansion, 256, stride=2, padding=1)  # P6
             self.conv7 = conv3x3(256, 256, stride=2, padding=1)  # P7
 
-            # self.ego_lateral = conv3x3(512 * block.expansion,  256, stride=2, padding=0)
             self.avg_pool = nn.AdaptiveAvgPool3d((None, 1, 1))
 
             self.lateral_layer1 = conv1x1(512 * block.expansion, 256)
@@ -202,8 +184,6 @@ class ResNetFPN(nn.Module):
                 m.bias.data.zero_()
 
 
-    
-
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
             self.patch_embed.eval()
@@ -219,8 +199,6 @@ class ResNetFPN(nn.Module):
                 m.eval()
                 for param in m.parameters():
                     param.requires_grad = False
-
-
 
 
     def _upsample(self, x, y):
@@ -303,26 +281,19 @@ class ResNetFPN(nn.Module):
                 ego_feat = self._upsample_time(ego_feat)
         else:
             x=self.patch_embed(x)
-            # print(x.shape)
             x=self.pos_drop(x)
-            # print(x.shape)
             x=self.swinaclayer1(x)
-            # print(x.shape)
             x1=x #192 4 56 56
-            # x=self.patchmerge1(x)
             x=self.swinaclayer2(x)
             x2=x #384 4 28 28
-            # x=self.patchmerge2(x)
             x=self.swinaclayer3(x)
             x3=x #768 4 14 14
-            # x=self.patchmerge3(x)
             x=self.swinaclayer4(x)
             x = rearrange(x, 'n c d h w -> n d h w c')
             x = self.norm3(x)
             x = rearrange(x, 'n d h w c -> n c d h w')
             x4=x #1536 4 7 7
 
-            #up can be pretrained
 
             u1=self.upcov1(x1)#256 4 56 56
             u2=self.upcov2(x2)#512 4 28 28
@@ -331,13 +302,9 @@ class ResNetFPN(nn.Module):
             
             
             x = u1
-            # if self.pool2 is not None:
-            #     x = self.pool2(x)
             c3 = u2
             c4 = u3
             c5 = u4
-
-            #down can be pretrained
 
             p5 = self.lateral_layer1(c5)
             p5_upsampled = self._upsample(p5, c4)
