@@ -34,12 +34,6 @@ def conv1x1(in_channel, out_channel):
 
 
 
-# swinmodel=swin_transformer.SwinTransformer3D()
-
-
-
-#good
-
 
 class ResNetFPN(nn.Module):
 
@@ -113,17 +107,12 @@ class ResNetFPN(nn.Module):
         self.swinaclayer1=swin_transformer.BasicLayer(dim=int(embed_dim*2**0),depth=depths[0],num_heads=num_heads[0],window_size=self.window_size,
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:0]):sum(depths[:1])],downsample=swin_transformer.PatchMerging if 0<self.num_layers-1 else None)#384 4 28 28
         
-        # self.patchmerge1=swin_transformer.PatchMerging(dim=192)#384 4 28 28
-        
         self.swinaclayer2=swin_transformer.BasicLayer(dim=embed_dim*2**1,depth=2,num_heads=12,window_size=(8,7,7),
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:1]):sum(depths[:2])],downsample=swin_transformer.PatchMerging if 1<self.num_layers-1 else None)
         
-        # self.patchmerge2=swin_transformer.PatchMerging(dim=192*2)#768 4 14 14
         
         self.swinaclayer3=swin_transformer.BasicLayer(dim=embed_dim*2**2,depth=18,num_heads=24,window_size=(8,7,7),
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:2]):sum(depths[:3])],downsample=swin_transformer.PatchMerging if 2<self.num_layers-1 else None)#768 4 14 14
-        
-        # self.patchmerge3=swin_transformer.PatchMerging(dim=192*2**2)#1536 4 7 7
         
         self.swinaclayer4=swin_transformer.BasicLayer(dim=embed_dim*2**3,depth=2,num_heads=48,window_size=(8,7,7),
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:3]):sum(depths[:3 + 1])],downsample=swin_transformer.PatchMerging if 3<self.num_layers-1 else None)#1536 4 7 7
@@ -140,38 +129,12 @@ class ResNetFPN(nn.Module):
 
         self._freeze_stages()
         
-        
-#         self.upcov1=nn.Conv3d(384, 256, kernel_size=1, stride=1, padding=0, bias=False)
-#         self.upcov2=nn.ConvTranspose3d(768, 512, kernel_size=(1,2,2), stride=(1,2,2))
-#         self.upcov3=nn.ConvTranspose3d(1536, 1024, kernel_size=(1,2,2), stride=(1,2,2))
-#         self.upcov4=nn.Conv3d(1536, 2048, kernel_size=1, stride=1, padding=0, bias=False)
-#         # self.swinlayer1=swinmodel.layers[0]
-#         # self.swinlayer2=swinmodel.layers[1]
-#         # self.swinlayer3=swinmodel.layers[2]
-#         # self.swinlayer4=swinmodel.layers[3]
-#         self.upcov2nonlocal1=pvl.create_nonlocal(dim_in=768,dim_inner=768//2)
-#         self.upcov2nonlocal2=pvl.create_nonlocal(dim_in=512,dim_inner=512//2)
-
-#         self.upcov3nonlocal1=pvl.create_nonlocal(dim_in=1536,dim_inner=1536//2)
-#         self.upcov3nonlocal2=pvl.create_nonlocal(dim_in=1024,dim_inner=1024//2)
-
-        # self.conv1 = nn.Conv3d(3, 64, kernel_size=(1,7,7), stride=(1,2,2), padding=(0,3,3),
-        #                        bias=False)
-        # self.bn1 = nn.BatchNorm3d(64)
-        # self.relu = nn.ReLU(inplace=True)
-        # self.pool1 = nn.MaxPool3d(kernel_size=(
-        #     1, 3, 3), stride=(1, 2, 2), padding=(0, 0, 0))
         self.layer_names = []
 
         self.layer1 = self._make_layer(
             block, 64, num_blocks[0], temp_kernals=model_3d_layers[0], nl_inds=non_local_inds[0])
         self.MODEL_TYPE = args.MODEL_TYPE
-        
-        # if args.model_subtype in ['C2D','RCN','CLSTM','RCLSTM','CGRU','RCGRU']:
-        #     self.pool2 = None
-        # else:
-        #     self.pool2 = nn.MaxPool3d(kernel_size=(
-        #         2, 1, 1), stride=(2, 1, 1), padding=(0, 0, 0))
+
         self.pool2=None
         self.layer2 = self._make_layer(
             block, 128, num_blocks[1], stride=2, temp_kernals=model_3d_layers[1], nl_inds=non_local_inds[1])
@@ -180,8 +143,6 @@ class ResNetFPN(nn.Module):
         self.layer4 = self._make_layer(
             block, 512, num_blocks[3], stride=2, temp_kernals=model_3d_layers[3], nl_inds=non_local_inds[3])
 
-        #self.avgpool = nn.AvgPool2d(7, stride=1)
-        #self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         if self.MODEL_TYPE == 'SlowFast':
             self.conv6 = conv3x3(2304, 256, stride=2, padding=1)  # P6
@@ -201,7 +162,6 @@ class ResNetFPN(nn.Module):
             self.conv6 = conv3x3(512 * block.expansion, 256, stride=2, padding=1)  # P6
             self.conv7 = conv3x3(256, 256, stride=2, padding=1)  # P7
 
-            # self.ego_lateral = conv3x3(512 * block.expansion,  256, stride=2, padding=0)
             self.avg_pool = nn.AdaptiveAvgPool3d((None, 1, 1))
 
             self.lateral_layer1 = conv1x1(512 * block.expansion, 256)
@@ -367,9 +327,6 @@ class TSVideoSwinBackbone(nn.Module):
         x2=self.catconv1(xrgb2,xflow2)
         x3=self.catconv2(xrgb3,xflow3)
         x4=self.catconv3(xrgb4,xflow4)
-        # print("catconv1",x2.shape)
-        # print("catconv2",x3.shape)
-        # print("catconv3",x4.shape)
         return [x2,x3,x4]
 
 
@@ -499,23 +456,6 @@ class YOLOPAFPN3D(nn.Module):
         return outputs
     
 
-
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class viedoswinFlow(nn.Module):
 
     def __init__(self,  pretrained=None,
@@ -570,17 +510,13 @@ class viedoswinFlow(nn.Module):
         self.swinaclayer1=swin_transformer.BasicLayer(dim=int(embed_dim*2**0),depth=depths[0],num_heads=num_heads[0],window_size=self.window_size,
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:0]):sum(depths[:1])],downsample=swin_transformer.PatchMerging if 0<self.num_layers-1 else None)#384 4 28 28
         
-        # self.patchmerge1=swin_transformer.PatchMerging(dim=192)#384 4 28 28
         
         self.swinaclayer2=swin_transformer.BasicLayer(dim=embed_dim*2**1,depth=depths[1],num_heads=num_heads[1],window_size=self.window_size,
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:1]):sum(depths[:2])],downsample=swin_transformer.PatchMerging if 1<self.num_layers-1 else None)
         
-        # self.patchmerge2=swin_transformer.PatchMerging(dim=192*2)#768 4 14 14
         
         self.swinaclayer3=swin_transformer.BasicLayer(dim=embed_dim*2**2,depth=depths[2],num_heads=num_heads[2],window_size=self.window_size,
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:2]):sum(depths[:3])],downsample=swin_transformer.PatchMerging if 2<self.num_layers-1 else None)#768 4 14 14
-        
-        # self.patchmerge3=swin_transformer.PatchMerging(dim=192*2**2)#1536 4 7 7
         
         self.swinaclayer4=swin_transformer.BasicLayer(dim=embed_dim*2**3,depth=depths[3],num_heads=num_heads[3],window_size=self.window_size,
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:3]):sum(depths[:3 + 1])],downsample=swin_transformer.PatchMerging if 3<self.num_layers-1 else None)#1536 4 7 7
@@ -590,17 +526,6 @@ class viedoswinFlow(nn.Module):
 
         self._freeze_stages()
         
-        
-        # self.upcov1=nn.Conv3d(384, 256, kernel_size=1, stride=1, padding=0, bias=False)
-        # self.upcov2=nn.ConvTranspose3d(768, 512, kernel_size=(1,2,2), stride=(1,2,2))
-        # self.upcov3=nn.ConvTranspose3d(1536, 1024, kernel_size=(1,2,2), stride=(1,2,2))
-        # self.upcov4=nn.Conv3d(1536, 2048, kernel_size=1, stride=1, padding=0, bias=False)
-
-        # self.upcov2nonlocal1=pvl.create_nonlocal(dim_in=768,dim_inner=768//2)
-        # self.upcov2nonlocal2=pvl.create_nonlocal(dim_in=512,dim_inner=512//2)
-
-        # self.upcov3nonlocal1=pvl.create_nonlocal(dim_in=1536,dim_inner=1536//2)
-        # self.upcov3nonlocal2=pvl.create_nonlocal(dim_in=1024,dim_inner=1024//2)
 
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
@@ -621,29 +546,16 @@ class viedoswinFlow(nn.Module):
 
     def forward(self, x):
         x=self.patch_embed(x)
-        # print(x.shape)
+
         x=self.pos_drop(x)
-        # print(x.shape)
         x,xbfd1=self.swinaclayer1(x)
-        # print(x.shape)
-        # x=self.patchmerge1(x)
         x,xbfd2=self.swinaclayer2(x)
-
-        # x=self.patchmerge2(x)
         x,xbfd3=self.swinaclayer3(x)
-
-        # x=self.patchmerge3(x)
         x,xbfd4=self.swinaclayer4(x)
         x = rearrange(x, 'n c d h w -> n d h w c')
         x = self.norm3(x)
         x = rearrange(x, 'n d h w c -> n c d h w')
 
-
-        #up can be pretrained
-
-        # u2=self.upcov2(x2)#512 4 28 28
-        # u3=self.upcov3(x3)#1024 4 14 14
-        # u4=self.upcov4(x)#2048 4 7 7  x4
         return [xbfd2,xbfd3,x]
 
 
@@ -722,22 +634,8 @@ class viedoswinRGB(nn.Module):
         self._freeze_stages()
         
         
-        # self.upcov1=nn.Conv3d(384, 256, kernel_size=1, stride=1, padding=0, bias=False)
-        # self.upcov2=nn.ConvTranspose3d(768, 512, kernel_size=(1,2,2), stride=(1,2,2))
-        # self.upcov3=nn.ConvTranspose3d(1536, 1024, kernel_size=(1,2,2), stride=(1,2,2))
-        # self.upcov4=nn.Conv3d(1536, 2048, kernel_size=1, stride=1, padding=0, bias=False)
-
-        # self.upcov2nonlocal1=pvl.create_nonlocal(dim_in=768,dim_inner=768//2)
-        # self.upcov2nonlocal2=pvl.create_nonlocal(dim_in=512,dim_inner=512//2)
-
-        # self.upcov3nonlocal1=pvl.create_nonlocal(dim_in=1536,dim_inner=1536//2)
-        # self.upcov3nonlocal2=pvl.create_nonlocal(dim_in=1024,dim_inner=1024//2)
 
     def _freeze_stages(self):
-        # if self.frozen_stages >= 0:
-        #     self.patch_embed.eval()
-        #     for param in self.patch_embed.parameters():
-        #         param.requires_grad = False
 
         if self.frozen_stages >= 1:
             self.pos_drop.eval()
@@ -752,29 +650,17 @@ class viedoswinRGB(nn.Module):
 
     def forward(self, x):
         x=self.patch_embed(x)
-        # print(x.shape)
         x=self.pos_drop(x)
-        # print(x.shape)
         x,xbfd1=self.swinaclayer1(x)
-        # print(x.shape)
-        # x=self.patchmerge1(x)
+
         x,xbfd2=self.swinaclayer2(x)
 
-        # x=self.patchmerge2(x)
         x,xbfd3=self.swinaclayer3(x)
 
-        # x=self.patchmerge3(x)
         x,xbfd4=self.swinaclayer4(x)
         x = rearrange(x, 'n c d h w -> n d h w c')
         x = self.norm3(x)
         x = rearrange(x, 'n d h w c -> n c d h w')
-
-
-        #up can be pretrained
-
-        # u2=self.upcov2(x2)#512 4 28 28
-        # u3=self.upcov3(x3)#1024 4 14 14
-        # u4=self.upcov4(x)#2048 4 7 7  x4
         return [xbfd2,xbfd3,x]
 
 

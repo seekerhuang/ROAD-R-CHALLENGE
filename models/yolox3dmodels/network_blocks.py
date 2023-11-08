@@ -259,12 +259,6 @@ class DWConv3D(nn.Module):
 
 
 
-
-
-
-
-
-
 class Bottleneck(nn.Module):
     # Standard bottleneck
     def __init__(
@@ -305,11 +299,7 @@ class Bottleneck3D(nn.Module):
         act="silu",
     ):
         super().__init__()
-#         if tksize is None:
-#             tksize = 1
 
-#         if tstride is None:  
-#             tstride = 1
         hidden_channels = int(out_channels * expansion)
         Conv = DWConv3D if depthwise else BaseConv3D
         self.conv1 = BaseConv3D(in_channels, hidden_channels, 1, stride=1, act=act)
@@ -351,7 +341,6 @@ class Bottleneck3DDINO(nn.Module):
         if self.use_add:
             y = y + x
         return y
-
 
 
 

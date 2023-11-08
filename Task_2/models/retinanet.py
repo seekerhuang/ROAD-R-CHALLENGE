@@ -137,18 +137,11 @@ class RetinaNet(nn.Module):
         if args.MODE == 'train':  # eval_iters only in test case
             self.criterion = FocalLoss(args)
 
-        # self.ego_head = nn.Conv3d(self.head_size, args.num_ego_classes, kernel_size=(
-        #     3, 1, 1), stride=1, padding=(1, 0, 0))
-        # nn.init.constant_(self.ego_head.bias, bias_value)
-
 
     # def forward(self, images, gt_boxes=None, gt_labels=None, ego_labels=None, counts=None, img_indexs=None, get_features=False):
     def forward(self, images, gt_boxes=None, gt_labels=None, counts=None, img_indexs=None, get_features=False, logic=None, Cplus=None, Cminus=None, is_ulb=None):
         # sources, ego_feat = self.backbone(images)
         sources = self.backbone(images)
-
-        # ego_preds = self.ego_head(
-        #     ego_feat).squeeze(-1).squeeze(-1).permute(0, 2, 1).contiguous()
 
         grid_sizes = [feature_map.shape[-2:] for feature_map in sources]
         ancohor_boxes = self.anchors(grid_sizes)
@@ -170,8 +163,6 @@ class RetinaNet(nn.Module):
         if get_features:  # testing mode with feature return
             return flat_conf, features
         elif gt_boxes is not None:  # training mode
-            # return self.criterion(flat_conf, flat_loc, gt_boxes, gt_labels, counts, ancohor_boxes, ego_preds, ego_labels)
-            # return self.criterion(flat_conf, flat_loc, gt_boxes, gt_labels, counts, ancohor_boxes)
             return self.criterion(flat_conf, flat_loc, gt_boxes, gt_labels, counts, ancohor_boxes, logic, Cplus, Cminus, is_ulb=is_ulb), is_ulb
 
         else:  # otherwise testing mode
@@ -211,10 +202,6 @@ class RetinaNet(nn.Module):
         head_size = self.head_size
         
         for kk in range(num_heads_layers):
-            # if kk % 2 == 1 and time_kernel>1:
-            #     branch_kernel = 3
-            #     bpad = 1
-            # else:
             branch_kernel = 1
             bpad = 0
             layers.append(nn.Conv3d(head_size, head_size, kernel_size=(
@@ -291,10 +278,6 @@ class SwinRetinaNet(nn.Module):
         if args.MODE == 'train':  # eval_iters only in test case
             self.criterion = FocalLoss(args)
 
-        # self.ego_head = nn.Conv3d(self.head_size, args.num_ego_classes, kernel_size=(
-        #     3, 1, 1), stride=1, padding=(1, 0, 0))
-        # nn.init.constant_(self.ego_head.bias, bias_value)
-
 
     # def forward(self, images, gt_boxes=None, gt_labels=None, ego_labels=None, counts=None, img_indexs=None, get_features=False):
     def forward(self, RGBimages,Flowimages ,gt_boxes=None, gt_labels=None, counts=None, img_indexs=None, get_features=False, logic=None, Cplus=None, Cminus=None, is_ulb=None):
@@ -326,8 +309,7 @@ class SwinRetinaNet(nn.Module):
         if get_features:  # testing mode with feature return
             return flat_conf, features
         elif gt_boxes is not None:  # training mode
-            # return self.criterion(flat_conf, flat_loc, gt_boxes, gt_labels, counts, ancohor_boxes, ego_preds, ego_labels)
-            # return self.criterion(flat_conf, flat_loc, gt_boxes, gt_labels, counts, ancohor_boxes)
+           
             return self.criterion(flat_conf, flat_loc, gt_boxes, gt_labels, counts, ancohor_boxes, logic, Cplus, Cminus, is_ulb=is_ulb), is_ulb
 
         else:  # otherwise testing mode
@@ -335,7 +317,6 @@ class SwinRetinaNet(nn.Module):
             for b in range(flat_loc.shape[0]):
                 temp_l = []
                 for s in range(flat_loc.shape[1]):
-                    # torch.stack([decode(flat_loc[b], ancohor_boxes) for b in range(flat_loc.shape[0])], 0),
                     temp_l.append(decode(flat_loc[b, s], ancohor_boxes))
                 decoded_boxes.append(torch.stack(temp_l, 0))
             # return torch.stack(decoded_boxes, 0), flat_conf, ego_preds
@@ -367,10 +348,7 @@ class SwinRetinaNet(nn.Module):
         head_size = self.head_size
         
         for kk in range(num_heads_layers):
-            # if kk % 2 == 1 and time_kernel>1:
-            #     branch_kernel = 3
-            #     bpad = 1
-            # else:
+ 
             branch_kernel = 1
             bpad = 0
             layers.append(nn.Conv3d(head_size, head_size, kernel_size=(
@@ -455,9 +433,6 @@ class DinoRetinaNet(nn.Module):
         if args.MODE == 'train':  # eval_iters only in test case
             self.criterion = FocalLoss(args)
 
-        # self.ego_head = nn.Conv3d(self.head_size, args.num_ego_classes, kernel_size=(
-        #     3, 1, 1), stride=1, padding=(1, 0, 0))
-        # nn.init.constant_(self.ego_head.bias, bias_value)
 
 
     # def forward(self, images, gt_boxes=None, gt_labels=None, ego_labels=None, counts=None, img_indexs=None, get_features=False):
@@ -466,8 +441,6 @@ class DinoRetinaNet(nn.Module):
         # sources, ego_feat = self.backbone(images)
         cls_token,sources = self.backbone(RGBimages)
 
-        # ego_preds = self.ego_head(
-        #     ego_feat).squeeze(-1).squeeze(-1).permute(0, 2, 1).contiguous()
 
         grid_sizes = [feature_map.shape[-2:] for feature_map in sources]
         ancohor_boxes = self.anchors(grid_sizes)
@@ -506,8 +479,7 @@ class DinoRetinaNet(nn.Module):
         if get_features:  # testing mode with feature return
             return flat_conf, features
         elif gt_boxes is not None:  # training mode
-            # return self.criterion(flat_conf, flat_loc, gt_boxes, gt_labels, counts, ancohor_boxes, ego_preds, ego_labels)
-            # return self.criterion(flat_conf, flat_loc, gt_boxes, gt_labels, counts, ancohor_boxes)
+        
             return self.criterion(flat_conf, flat_loc, gt_boxes, gt_labels, counts, ancohor_boxes, logic, Cplus, Cminus, is_ulb=is_ulb), is_ulb
 
         else:  # otherwise testing mode
@@ -546,10 +518,7 @@ class DinoRetinaNet(nn.Module):
         head_size = self.head_size
         
         for kk in range(num_heads_layers):
-            # if kk % 2 == 1 and time_kernel>1:
-            #     branch_kernel = 3
-            #     bpad = 1
-            # else:
+    
             branch_kernel = 1
             bpad = 0
             layers.append(nn.Conv3d(head_size+1, head_size+1, kernel_size=(
@@ -575,10 +544,7 @@ class DinoRetinaNet(nn.Module):
         head_size = self.head_size
         
         for kk in range(num_heads_layers):
-            # if kk % 2 == 1 and time_kernel>1:
-            #     branch_kernel = 3
-            #     bpad = 1
-            # else:
+        
             branch_kernel = 1
             bpad = 0
             layers.append(nn.Conv3d(head_size, head_size, kernel_size=(
