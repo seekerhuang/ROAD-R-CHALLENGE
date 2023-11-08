@@ -5,7 +5,7 @@ Based on the information provided, for Task 2, participants are allowed to train
 
 > **Task 2:** in this task the participants will be able to train their models using the annotations for *all* videos in the training and validation set. [See Here](https://eval.ai/web/challenges/challenge-page/2081/evaluation)
 
-Therefore, we trained our model using the *all* videos in the training and validation set **without employing any data augmentation, complex post-processing, TTA, or model ensemble tricks**. After applying maxhs-based post-processing (with a threshold set at 0.4), we achieved an impressive **F1-score of 0.60 in Task 2**. This further demonstrates the robust generalization of our model construction.
+Therefore, we trained our model using the *all* videos in the training and validation set **without employing any data augmentation, complex post-processing, TTA, or model ensemble tricks**. After applying maxhs-based post-processing (with a threshold set at 0.4), we achieved an impressive **F1-score of 0.60 in Task 2**.
 
 The second task requires that the models' predictions are compliant with the 243 requirements provided in `constraints/requirements.txt`.
 
