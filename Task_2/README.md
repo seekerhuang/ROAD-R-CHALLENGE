@@ -54,7 +54,7 @@ The `road` directory should look like this:
 
 And you need to place the directory for configuring the dataset in the parent level of this file directory, i.e., the parent level of the directory where the README.md file is located. Please refer to [road-dataset](https://github.com/gurkirt/road-dataset) for the specific format.
 
-## Pretrained Model：
+## Pretrained Model
 
 Please place the pre-trained models in the `/pretrainmodel` folder. You can obtain the pre-trained models from the link provided below.
 
