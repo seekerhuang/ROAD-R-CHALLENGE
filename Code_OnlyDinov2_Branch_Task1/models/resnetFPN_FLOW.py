@@ -34,153 +34,6 @@ def conv1x1(in_channel, out_channel):
 
 
 
-# swinmodel=swin_transformer.SwinTransformer3D()
-
-
-
-
-class ResNetFPN(nn.Module):
-
-    def __init__(self, block, args, pretrained=None,
-                 pretrained2d=True,
-                 patch_size=(2, 4, 4),
-        embed_dim=192,
-        depths=[2, 2, 18, 2],
-        num_heads=[6, 12, 24, 48],
-        window_size=(8, 7, 7),
-        mlp_ratio=4.0,
-        qkv_bias=True,
-        qk_scale=None,
-                 drop_rate=0.0,
-        attn_drop_rate=0.0,
-        drop_path_rate=0.4,
-        patch_norm=True,
-                 norm_layer=nn.LayerNorm,
-                 frozen_stages=4,
-                 use_checkpoint=False):
-        
-        self.inplanes = 64
-        super(ResNetFPN, self).__init__()
-    
-    
-        if args.MODEL_TYPE.startswith('SlowFast'):
-            with open('configs/ROAD.yml') as f:
-                config = yaml.load(f, Loader=yaml.FullLoader)
-            opt = EasyDict(config)
-            print(opt)
-            self.inplanes = 64
-            super(ResNetFPN, self).__init__()
-            self.backbone = AVA_backbone(opt)
-    
-
-
-        depths=[2, 2, 18, 2]
-        num_heads=[6, 12, 24, 48]
-        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]  # stochastic depth decay rule
-
-
-        self.pretrained = pretrained
-        self.pretrained2d = pretrained2d
-        self.num_layers = len(depths)
-        self.embed_dim = embed_dim
-        self.patch_norm = patch_norm
-        self.frozen_stages = frozen_stages
-        self.window_size = window_size
-        self.patch_size = patch_size
-
-
-
-        self.MODEL_TYPE = args.MODEL_TYPE
-        num_blocks = args.model_perms
-        non_local_inds = args.non_local_inds
-        model_3d_layers = args.model_3d_layers
-        self.num_blocks = num_blocks
-        self.non_local_inds = non_local_inds
-        self.model_3d_layers = model_3d_layers
-        self.patch_norm = True
-        self.patch_size=patch_size
-        self.window_size=window_size
-        self.num_layers=4
-        self.num_features = int(embed_dim * 2**(self.num_layers-1))
-        self.patch_embed=swin_transformer.PatchEmbed3D(patch_size=self.patch_size, in_chans=3, embed_dim=embed_dim,
-            norm_layer=nn.LayerNorm if norm_layer else None)#embed_dim 4 56 56
-        
-        self.pos_drop = nn.Dropout(p=0.0)
-        # self.layers = nn.ModuleList()
-        
-        self.swinaclayer1=swin_transformer.BasicLayer(dim=int(embed_dim*2**0),depth=depths[0],num_heads=num_heads[0],window_size=self.window_size,
-                                                      qkv_bias=True,drop_path=dpr[sum(depths[:0]):sum(depths[:1])],downsample=swin_transformer.PatchMerging if 0<self.num_layers-1 else None)#384 4 28 28
-        
-        self.swinaclayer2=swin_transformer.BasicLayer(dim=embed_dim*2**1,depth=2,num_heads=12,window_size=(8,7,7),
-                                                      qkv_bias=True,drop_path=dpr[sum(depths[:1]):sum(depths[:2])],downsample=swin_transformer.PatchMerging if 1<self.num_layers-1 else None)
-
-        
-        self.swinaclayer3=swin_transformer.BasicLayer(dim=embed_dim*2**2,depth=18,num_heads=24,window_size=(8,7,7),
-                                                      qkv_bias=True,drop_path=dpr[sum(depths[:2]):sum(depths[:3])],downsample=swin_transformer.PatchMerging if 2<self.num_layers-1 else None)#768 4 14 14
-        
-        
-        self.swinaclayer4=swin_transformer.BasicLayer(dim=embed_dim*2**3,depth=2,num_heads=48,window_size=(8,7,7),
-                                                      qkv_bias=True,drop_path=dpr[sum(depths[:3]):sum(depths[:3 + 1])],downsample=swin_transformer.PatchMerging if 3<self.num_layers-1 else None)#1536 4 7 7
-        
-
-        self.norm3 = nn.LayerNorm(self.num_features)
-
-        self._freeze_stages()
-        
-        self.layer_names = []
-
-        self.layer1 = self._make_layer(
-            block, 64, num_blocks[0], temp_kernals=model_3d_layers[0], nl_inds=non_local_inds[0])
-        self.MODEL_TYPE = args.MODEL_TYPE
-        
-        self.pool2=None
-        self.layer2 = self._make_layer(
-            block, 128, num_blocks[1], stride=2, temp_kernals=model_3d_layers[1], nl_inds=non_local_inds[1])
-        self.layer3 = self._make_layer(
-            block, 256, num_blocks[2], stride=2, temp_kernals=model_3d_layers[2], nl_inds=non_local_inds[2])
-        self.layer4 = self._make_layer(
-            block, 512, num_blocks[3], stride=2, temp_kernals=model_3d_layers[3], nl_inds=non_local_inds[3])
-
-
-        if self.MODEL_TYPE == 'SlowFast':
-            self.conv6 = conv3x3(2304, 256, stride=2, padding=1)  # P6
-            self.conv7 = conv3x3(256, 256, stride=2, padding=1)  # P7
-
-            self.ego_lateral = conv3x3(512 * block.expansion,  256, stride=2, padding=0)
-            self.avg_pool = nn.AdaptiveAvgPool3d((None, 1, 1))
-
-            self.lateral_layer1 = conv1x1(2304, 256)
-            self.lateral_layer2 = conv1x1(1152, 256)
-            self.lateral_layer3 = conv1x1(576, 256)
-            
-            self.corr_layer1 = conv3x3(256, 256, stride=1, padding=1)  # P4
-            self.corr_layer2 = conv3x3(256, 256, stride=1, padding=1)  # P4
-            self.corr_layer3 = conv3x3(256, 256, stride=1, padding=1)  # P3
-        else:
-            self.conv6 = conv3x3(512 * block.expansion, 256, stride=2, padding=1)  # P6
-            self.conv7 = conv3x3(256, 256, stride=2, padding=1)  # P7
-
-            # self.ego_lateral = conv3x3(512 * block.expansion,  256, stride=2, padding=0)
-            self.avg_pool = nn.AdaptiveAvgPool3d((None, 1, 1))
-
-            self.lateral_layer1 = conv1x1(512 * block.expansion, 256)
-            self.lateral_layer2 = conv1x1(256 * block.expansion, 256)
-            self.lateral_layer3 = conv1x1(128 * block.expansion, 256)
-            
-            self.corr_layer1 = conv3x3(256, 256, stride=1, padding=1)  # P4
-            self.corr_layer2 = conv3x3(256, 256, stride=1, padding=1)  # P4
-            self.corr_layer3 = conv3x3(256, 256, stride=1, padding=1)  # P3
-
-
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                torch.nn.init.kaiming_uniform_(m.weight, a=1)
-                if hasattr(m.bias, 'data'):
-                    torch.nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-
 
 class TSAttBlock(nn.Module):
     def __init__(
@@ -284,6 +137,135 @@ class TSAttBlock(nn.Module):
         if self.uptemporal:
             x=self.upconv(x)
         return (x)
+
+
+
+class ResNetFPN(nn.Module):
+    def __init__(self, block, args, pretrained=None,
+                 pretrained2d=True,
+                 patch_size=(2, 4, 4),
+        embed_dim=192,
+        depths=[2, 2, 18, 2],
+        num_heads=[6, 12, 24, 48],
+        window_size=(8, 7, 7),
+        mlp_ratio=4.0,
+        qkv_bias=True,
+        qk_scale=None,
+                 drop_rate=0.0,
+        attn_drop_rate=0.0,
+        drop_path_rate=0.4,
+        patch_norm=True,
+                 norm_layer=nn.LayerNorm,
+                 frozen_stages=4,
+                 use_checkpoint=False):
+        
+        self.inplanes = 64
+        super(ResNetFPN, self).__init__()
+    
+        if args.MODEL_TYPE.startswith('SlowFast'):
+            with open('configs/ROAD.yml') as f:
+                config = yaml.load(f, Loader=yaml.FullLoader)
+            opt = EasyDict(config)
+            print(opt)
+            self.inplanes = 64
+            super(ResNetFPN, self).__init__()
+            self.backbone = AVA_backbone(opt)
+        depths=[2, 2, 18, 2]
+        num_heads=[6, 12, 24, 48]
+        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]  # stochastic depth decay rule
+
+        self.pretrained = pretrained
+        self.pretrained2d = pretrained2d
+        self.num_layers = len(depths)
+        self.embed_dim = embed_dim
+        self.patch_norm = patch_norm
+        self.frozen_stages = frozen_stages
+        self.window_size = window_size
+        self.patch_size = patch_size
+        self.MODEL_TYPE = args.MODEL_TYPE
+        num_blocks = args.model_perms
+        non_local_inds = args.non_local_inds
+        model_3d_layers = args.model_3d_layers
+        self.num_blocks = num_blocks
+        self.non_local_inds = non_local_inds
+        self.model_3d_layers = model_3d_layers
+        self.patch_norm = True
+        self.patch_size=patch_size
+        self.window_size=window_size
+        self.num_layers=4
+        self.num_features = int(embed_dim * 2**(self.num_layers-1))
+
+        self.patch_embed=swin_transformer.PatchEmbed3D(patch_size=self.patch_size, in_chans=3, embed_dim=embed_dim,
+            norm_layer=nn.LayerNorm if norm_layer else None)#embed_dim 4 56 56
+        self.pos_drop = nn.Dropout(p=0.0)
+        
+        self.swinaclayer1=swin_transformer.BasicLayer(dim=int(embed_dim*2**0),depth=depths[0],num_heads=num_heads[0],window_size=self.window_size,
+                                                      qkv_bias=True,drop_path=dpr[sum(depths[:0]):sum(depths[:1])],downsample=swin_transformer.PatchMerging if 0<self.num_layers-1 else None)#384 4 28 28
+        
+        self.swinaclayer2=swin_transformer.BasicLayer(dim=embed_dim*2**1,depth=2,num_heads=12,window_size=(8,7,7),
+                                                      qkv_bias=True,drop_path=dpr[sum(depths[:1]):sum(depths[:2])],downsample=swin_transformer.PatchMerging if 1<self.num_layers-1 else None)
+
+        self.swinaclayer3=swin_transformer.BasicLayer(dim=embed_dim*2**2,depth=18,num_heads=24,window_size=(8,7,7),
+                                                      qkv_bias=True,drop_path=dpr[sum(depths[:2]):sum(depths[:3])],downsample=swin_transformer.PatchMerging if 2<self.num_layers-1 else None)#768 4 14 14
+    
+        self.swinaclayer4=swin_transformer.BasicLayer(dim=embed_dim*2**3,depth=2,num_heads=48,window_size=(8,7,7),
+                                                      qkv_bias=True,drop_path=dpr[sum(depths[:3]):sum(depths[:3 + 1])],downsample=swin_transformer.PatchMerging if 3<self.num_layers-1 else None)#1536 4 7 7
+
+        self.norm3 = nn.LayerNorm(self.num_features)
+
+        self._freeze_stages()
+        self.layer_names = []
+
+
+        self.layer1 = self._make_layer(
+            block, 64, num_blocks[0], temp_kernals=model_3d_layers[0], nl_inds=non_local_inds[0])
+        self.MODEL_TYPE = args.MODEL_TYPE
+        self.pool2=None
+        self.layer2 = self._make_layer(
+            block, 128, num_blocks[1], stride=2, temp_kernals=model_3d_layers[1], nl_inds=non_local_inds[1])
+        self.layer3 = self._make_layer(
+            block, 256, num_blocks[2], stride=2, temp_kernals=model_3d_layers[2], nl_inds=non_local_inds[2])
+        self.layer4 = self._make_layer(
+            block, 512, num_blocks[3], stride=2, temp_kernals=model_3d_layers[3], nl_inds=non_local_inds[3])
+
+        if self.MODEL_TYPE == 'SlowFast':
+            self.conv6 = conv3x3(2304, 256, stride=2, padding=1)  # P6
+            self.conv7 = conv3x3(256, 256, stride=2, padding=1)  # P7
+
+            self.ego_lateral = conv3x3(512 * block.expansion,  256, stride=2, padding=0)
+            self.avg_pool = nn.AdaptiveAvgPool3d((None, 1, 1))
+
+            self.lateral_layer1 = conv1x1(2304, 256)
+            self.lateral_layer2 = conv1x1(1152, 256)
+            self.lateral_layer3 = conv1x1(576, 256)
+            
+            self.corr_layer1 = conv3x3(256, 256, stride=1, padding=1)  # P4
+            self.corr_layer2 = conv3x3(256, 256, stride=1, padding=1)  # P4
+            self.corr_layer3 = conv3x3(256, 256, stride=1, padding=1)  # P3
+        else:
+            self.conv6 = conv3x3(512 * block.expansion, 256, stride=2, padding=1)  # P6
+            self.conv7 = conv3x3(256, 256, stride=2, padding=1)  # P7
+
+            # self.ego_lateral = conv3x3(512 * block.expansion,  256, stride=2, padding=0)
+            self.avg_pool = nn.AdaptiveAvgPool3d((None, 1, 1))
+
+            self.lateral_layer1 = conv1x1(512 * block.expansion, 256)
+            self.lateral_layer2 = conv1x1(256 * block.expansion, 256)
+            self.lateral_layer3 = conv1x1(128 * block.expansion, 256)
+            
+            self.corr_layer1 = conv3x3(256, 256, stride=1, padding=1)  # P4
+            self.corr_layer2 = conv3x3(256, 256, stride=1, padding=1)  # P4
+            self.corr_layer3 = conv3x3(256, 256, stride=1, padding=1)  # P3
+
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                torch.nn.init.kaiming_uniform_(m.weight, a=1)
+                if hasattr(m.bias, 'data'):
+                    torch.nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
 
 
     
@@ -658,18 +640,12 @@ class viedoswinRGB(nn.Module):
         x,xbfd2=self.swinaclayer2(x)
         x,xbfd3=self.swinaclayer3(x)
         x,xbfd4=self.swinaclayer4(x)
-        
+
         x = rearrange(x, 'n c d h w -> n d h w c')
         x = self.norm3(x)
         x = rearrange(x, 'n d h w c -> n c d h w')
 
         return [xbfd2,xbfd3,x]
-
-
-
-
-
-
 
 
                                        
