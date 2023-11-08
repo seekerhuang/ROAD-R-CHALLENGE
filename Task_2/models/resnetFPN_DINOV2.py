@@ -11,20 +11,17 @@ import pytorchvideo.layers as pvl
 import yaml
 from easydict import EasyDict
 from .backbones import AVA_backbone
-
 from functools import reduce, lru_cache
 from operator import mul
 from einops import rearrange
-
-
-
-
 from .yolox3dmodels.yolo_pafpn import YOLOPAFPN3D
-
 from .yolox3dmodels.darknet import CSPDarknet
 from .yolox3dmodels.network_blocks import BaseConv3D, CSPLayer, DWConv,CSPLayer3D,BaseTransConv3DDINO,DWConv3D,BaseOnlyConv3D,BaseConv3DDINO,CSPLayer3DDINO,BaseOnlyTransConv3D
 from mmpretrain import get_model
 from mmaction.apis import inference_recognizer, init_recognizer
+
+
+
 logger = lutils.get_logger(__name__)
 
 ### Download weights from https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
@@ -36,7 +33,6 @@ def conv3x3(in_planes, out_planes, stride=1, padding=1, bias=False):
 
 def conv1x1(in_channel, out_channel):
     return nn.Conv3d(in_channel, out_channel, kernel_size=1, stride=1, padding=0, bias=False)
-
 
 
 class ChannAT(nn.Module):
@@ -66,8 +62,6 @@ class ChannAT(nn.Module):
         y = self.sigmoid(y)
 
         return x * y + x
-
-
 
 
 class TSAttBlock(nn.Module):
