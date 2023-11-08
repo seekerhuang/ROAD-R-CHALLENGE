@@ -345,8 +345,6 @@ class viedoswinFlow(nn.Module):
 
 
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]  # stochastic depth decay rule
-
-
         self.pretrained = pretrained
         self.pretrained2d = pretrained2d
         self.num_layers = len(depths)
@@ -355,9 +353,6 @@ class viedoswinFlow(nn.Module):
         self.frozen_stages = frozen_stages
         self.window_size = window_size
         self.patch_size = patch_size
-
-
-
         self.patch_norm = True
         self.patch_size=patch_size
         self.window_size=window_size

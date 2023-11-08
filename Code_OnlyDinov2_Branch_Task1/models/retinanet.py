@@ -583,10 +583,6 @@ class DinoRetinaNet(nn.Module):
         return layers    
     
     
-    
-    
-    
-    
 def build_retinanet(args):
     if args.modelswin:
         return SwinRetinaNet(backbone_models(args), args)

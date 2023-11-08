@@ -26,8 +26,6 @@ def get_time_dim(net):
     return None
 
 def inflate_weight(weight,time_dim):
-    # if time_dim is None:
-    #     time_dim = get_time_dim(net)
     for k in weight.keys():
         if ('conv' in k) and ('bn' not in k) and ('lateral_conv0' not in k) and ('reduce_conv1' not in k) and ('C3_p4' not in k) and ('C3_n4' not in k):
             w = weight[k].detach().cpu().numpy()
@@ -66,32 +64,26 @@ def inflate_weight(weight,time_dim):
             weight[k]=torch.from_numpy(w_expanded)
     return weight
 
+
 def inflate_weight_channel(weight, num_channels):
 
     for k in weight.keys():
         if ('cls_heads' in k) and ('cls_heads.6' not in k) and ('.bias' not in k):
             w = weight[k].detach().cpu().numpy()
             weight_shape = w.shape
-
-
             inflated_shape = (num_channels + 1, num_channels + 1) + weight_shape[2:]
             print(inflated_shape)
+
             inflated_weight = np.zeros(inflated_shape)
-
-
             inflated_weight[:num_channels, :num_channels] = w
-
-
             average_channel = np.mean(w, axis=0)
             print("avg",average_channel.shape)
-
 
             inflated_weight[num_channels, :num_channels] = average_channel
             inflated_weight[:num_channels, num_channels] = average_channel
             inflated_weight[num_channels, num_channels] = np.mean(average_channel)
+
             print(inflated_weight.shape)
-
-
             weight[k] = torch.from_numpy(inflated_weight)
         if ('cls_heads' in k) and ('cls_heads.6' not in k) and ('.bias' in k):
             bias = weight[k].detach().cpu().numpy()
@@ -99,6 +91,7 @@ def inflate_weight_channel(weight, num_channels):
             weight[k] = torch.from_numpy(inflated_bias)
             
     return weight
+
 
 def setup_training(args, net):
     optimizer, _ , solver_print_str = get_optim(args, net)
@@ -144,8 +137,6 @@ def setup_training(args, net):
     if args.pretrained_model_path is not None and args.RESUME == 0:
 
         checkpoint = torch.load(args.pretrained_model_path)
-        # state_dict_rgb = collections.OrderedDict(checkpoint['state_dict'])
-        # state_dict_flow=collections.OrderedDict(checkpoint['state_dict'])
         checkpoint2=torch.load(args.pretrained_model_path2)
         checkpoint_fpn=torch.load(args.pretrained_model_pathfpn)
         checkpoint_fpn=collections.OrderedDict(checkpoint_fpn['model'])
@@ -179,8 +170,6 @@ def setup_training(args, net):
 
         backbone_stat_dict_fpn=inflate_weight(backbone_stat_dict_fpn,1)
 
-
-
         backbone_stat_dict2 = {}
         for k in checkpoint2.keys():
             
@@ -193,24 +182,17 @@ def setup_training(args, net):
                 if k.startswith('module.cls_heads') and ('cls_heads.6' not in k):
                     backbone_stat_dict2[k.replace('module.', '')] = checkpoint2[k]
 
-                # if k.startswith('module'):
-                #     backbone_stat_dict2[k.replace('module.', '')] = checkpoint2[k]
-
-
-
         new_stat_dict={}
         backbone_stat_dict2=inflate_weight_channel(backbone_stat_dict2,256)
         for k in backbone_stat_dict2.keys():
             if 'cls_heads' in k:
                 print(k,backbone_stat_dict2[k].shape)
-        
-        new_stat_dict.update(backbone_stat_dict2)
-        # new_stat_dict.update(backbone_stat_dict_rgb)
-        # new_stat_dict.update(backbone_stat_dict_flow)
-        new_stat_dict.update(backbone_stat_dict_fpn)
 
+        new_stat_dict.update(backbone_stat_dict2)
+        new_stat_dict.update(backbone_stat_dict_fpn)
         net.load_state_dict(new_stat_dict,strict=False)
         result=net.load_state_dict(new_stat_dict,strict=False)
+        
         print("missing")
         print(result.missing_keys) 
         print("unexpcted")
