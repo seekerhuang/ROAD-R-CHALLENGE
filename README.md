@@ -1,5 +1,5 @@
 # ROAD-R Challenge
-The code is built on top of [3D-RetinaNet for ROAD](https://github.com/gurkirt/road-dataset).
+The code is built on top of [3D-RetinaNet for ROAD](https://github.com/gurkirt/3D-RetinaNet).
 
 The first task requires developing models for scenarios where only little annotated data is available at training time. 
 More precisely, only 3 out of 15 videos (from the training partition train_1 of the ROAD-R dataset) are used for training the models in this task.
@@ -101,7 +101,7 @@ There are readme instructions in the `environment`folder and `ensemble` folder t
 
 [2] [ROAD-R-2023-Challenge](https://github.com/mihaela-stoian/ROAD-R-2023-Challenge)
 
-[3] [3D-RetinaNet for ROAD](https://github.com/gurkirt/road-dataset)
+[3] [3D-RetinaNet for ROAD](https://github.com/gurkirt/3D-RetinaNet)
 
 [4] [Video-Swin-Transformer](https://github.com/SwinTransformer/Video-Swin-Transformer)
 

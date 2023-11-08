@@ -1,5 +1,5 @@
 # ROAD-R Challenge Task-2
-The code is built on top of [3D-RetinaNet for ROAD](https://github.com/gurkirt/road-dataset).
+The code is built on top of [3D-RetinaNet for ROAD](https://github.com/gurkirt/3D-RetinaNet).
 
 Based on the information provided, for Task 2, participants are allowed to train their models using the annotations from all 18 videos in the training and validation sets：
 
@@ -106,7 +106,7 @@ python post_processing_raw.py --file_path="yourpath_of_pkl" --requirements_path=
 
 [2] [ROAD-R-2023-Challenge](https://github.com/mihaela-stoian/ROAD-R-2023-Challenge)
 
-[3] [3D-RetinaNet for ROAD](https://github.com/gurkirt/road-dataset)
+[3] [3D-RetinaNet for ROAD](https://github.com/gurkirt/3D-RetinaNet)
 
 [4] [Video-Swin-Transformer](https://github.com/SwinTransformer/Video-Swin-Transformer)
 
