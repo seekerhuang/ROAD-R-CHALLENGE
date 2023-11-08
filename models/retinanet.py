@@ -78,9 +78,6 @@ class dinov2linearFix(nn.Module):
 
 
 
-
-
-
 class RetinaNet(nn.Module):
     """Feature Pyramid Network Architecture
     The network is composed of a backbone FPN network followed by the
@@ -137,18 +134,12 @@ class RetinaNet(nn.Module):
         if args.MODE == 'train':  # eval_iters only in test case
             self.criterion = FocalLoss(args)
 
-        # self.ego_head = nn.Conv3d(self.head_size, args.num_ego_classes, kernel_size=(
-        #     3, 1, 1), stride=1, padding=(1, 0, 0))
-        # nn.init.constant_(self.ego_head.bias, bias_value)
 
 
     # def forward(self, images, gt_boxes=None, gt_labels=None, ego_labels=None, counts=None, img_indexs=None, get_features=False):
     def forward(self, images, gt_boxes=None, gt_labels=None, counts=None, img_indexs=None, get_features=False, logic=None, Cplus=None, Cminus=None, is_ulb=None):
         # sources, ego_feat = self.backbone(images)
         sources = self.backbone(images)
-
-        # ego_preds = self.ego_head(
-        #     ego_feat).squeeze(-1).squeeze(-1).permute(0, 2, 1).contiguous()
 
         grid_sizes = [feature_map.shape[-2:] for feature_map in sources]
         ancohor_boxes = self.anchors(grid_sizes)
@@ -170,8 +161,7 @@ class RetinaNet(nn.Module):
         if get_features:  # testing mode with feature return
             return flat_conf, features
         elif gt_boxes is not None:  # training mode
-            # return self.criterion(flat_conf, flat_loc, gt_boxes, gt_labels, counts, ancohor_boxes, ego_preds, ego_labels)
-            # return self.criterion(flat_conf, flat_loc, gt_boxes, gt_labels, counts, ancohor_boxes)
+          
             return self.criterion(flat_conf, flat_loc, gt_boxes, gt_labels, counts, ancohor_boxes, logic, Cplus, Cminus, is_ulb=is_ulb), is_ulb
 
         else:  # otherwise testing mode
@@ -287,18 +277,12 @@ class SwinRetinaNet(nn.Module):
         if args.MODE == 'train':  # eval_iters only in test case
             self.criterion = FocalLoss(args)
 
-        # self.ego_head = nn.Conv3d(self.head_size, args.num_ego_classes, kernel_size=(
-        #     3, 1, 1), stride=1, padding=(1, 0, 0))
-        # nn.init.constant_(self.ego_head.bias, bias_value)
-
 
     # def forward(self, images, gt_boxes=None, gt_labels=None, ego_labels=None, counts=None, img_indexs=None, get_features=False):
     def forward(self, RGBimages,Flowimages ,gt_boxes=None, gt_labels=None, counts=None, img_indexs=None, get_features=False, logic=None, Cplus=None, Cminus=None, is_ulb=None):
         # sources, ego_feat = self.backbone(images)
         sources = self.backbone(RGBimages,Flowimages)
 
-        # ego_preds = self.ego_head(
-        #     ego_feat).squeeze(-1).squeeze(-1).permute(0, 2, 1).contiguous()
 
         grid_sizes = [feature_map.shape[-2:] for feature_map in sources]
         ancohor_boxes = self.anchors(grid_sizes)
@@ -322,8 +306,7 @@ class SwinRetinaNet(nn.Module):
         if get_features:  # testing mode with feature return
             return flat_conf, features
         elif gt_boxes is not None:  # training mode
-            # return self.criterion(flat_conf, flat_loc, gt_boxes, gt_labels, counts, ancohor_boxes, ego_preds, ego_labels)
-            # return self.criterion(flat_conf, flat_loc, gt_boxes, gt_labels, counts, ancohor_boxes)
+           
             return self.criterion(flat_conf, flat_loc, gt_boxes, gt_labels, counts, ancohor_boxes, logic, Cplus, Cminus, is_ulb=is_ulb), is_ulb
 
         else:  # otherwise testing mode
@@ -363,10 +346,7 @@ class SwinRetinaNet(nn.Module):
         head_size = self.head_size
         
         for kk in range(num_heads_layers):
-            # if kk % 2 == 1 and time_kernel>1:
-            #     branch_kernel = 3
-            #     bpad = 1
-            # else:
+      
             branch_kernel = 1
             bpad = 0
             layers.append(nn.Conv3d(head_size, head_size, kernel_size=(
@@ -484,7 +464,7 @@ class DinoRetinaNet(nn.Module):
         # loc b t h w c
         # conf b t h w c
         loc = torch.cat([o.view(o.size(0), o.size(1), -1) for o in loc], 2)
-        #loc b t hwc+ hwc+ hwc+ hwc+ hwc
+
         conf = torch.cat([o.view(o.size(0), o.size(1), -1) for o in conf], 2)
 
         flat_loc = loc.view(loc.size(0), loc.size(1), -1, 4)
