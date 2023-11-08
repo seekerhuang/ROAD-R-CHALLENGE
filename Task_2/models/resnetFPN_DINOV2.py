@@ -372,7 +372,6 @@ class viedoswinFlow(nn.Module):
         super(viedoswinFlow, self).__init__()
     
 
-
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]  # stochastic depth decay rule
 
 
@@ -384,9 +383,6 @@ class viedoswinFlow(nn.Module):
         self.frozen_stages = frozen_stages
         self.window_size = window_size
         self.patch_size = patch_size
-
-
-
         self.patch_norm = True
         self.patch_size=patch_size
         self.window_size=window_size
@@ -397,18 +393,14 @@ class viedoswinFlow(nn.Module):
         
         self.pos_drop = nn.Dropout(p=0.0)
         # self.layers = nn.ModuleList()
-        
         self.swinaclayer1=swin_transformer.BasicLayer(dim=int(embed_dim*2**0),depth=depths[0],num_heads=num_heads[0],window_size=self.window_size,
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:0]):sum(depths[:1])],downsample=swin_transformer.PatchMerging if 0<self.num_layers-1 else None)#384 4 28 28
-        
         
         self.swinaclayer2=swin_transformer.BasicLayer(dim=embed_dim*2**1,depth=depths[1],num_heads=num_heads[1],window_size=self.window_size,
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:1]):sum(depths[:2])],downsample=swin_transformer.PatchMerging if 1<self.num_layers-1 else None)
         
-        
         self.swinaclayer3=swin_transformer.BasicLayer(dim=embed_dim*2**2,depth=depths[2],num_heads=num_heads[2],window_size=self.window_size,
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:2]):sum(depths[:3])],downsample=swin_transformer.PatchMerging if 2<self.num_layers-1 else None)#768 4 14 14
-        
         
         self.swinaclayer4=swin_transformer.BasicLayer(dim=embed_dim*2**3,depth=depths[3],num_heads=num_heads[3],window_size=self.window_size,
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:3]):sum(depths[:3 + 1])],downsample=swin_transformer.PatchMerging if 3<self.num_layers-1 else None)#1536 4 7 7
@@ -475,11 +467,7 @@ class viedoswinRGB(nn.Module):
         
         self.inplanes = 64
         super(viedoswinRGB, self).__init__()
-    
-
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]  # stochastic depth decay rule
-
-
         self.pretrained = pretrained
         self.pretrained2d = pretrained2d
         self.num_layers = len(depths)
@@ -503,23 +491,16 @@ class viedoswinRGB(nn.Module):
         self.swinaclayer1=swin_transformer.BasicLayer(dim=int(embed_dim*2**0),depth=depths[0],num_heads=num_heads[0],window_size=self.window_size,
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:0]):sum(depths[:1])],downsample=swin_transformer.PatchMerging if 0<self.num_layers-1 else None)#384 4 28 28
         
-        
         self.swinaclayer2=swin_transformer.BasicLayer(dim=embed_dim*2**1,depth=depths[1],num_heads=num_heads[1],window_size=self.window_size,
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:1]):sum(depths[:2])],downsample=swin_transformer.PatchMerging if 1<self.num_layers-1 else None)
-        
-
         
         self.swinaclayer3=swin_transformer.BasicLayer(dim=embed_dim*2**2,depth=depths[2],num_heads=num_heads[2],window_size=self.window_size,
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:2]):sum(depths[:3])],downsample=swin_transformer.PatchMerging if 2<self.num_layers-1 else None)#768 4 14 14
         
-
-        
         self.swinaclayer4=swin_transformer.BasicLayer(dim=embed_dim*2**3,depth=depths[3],num_heads=num_heads[3],window_size=self.window_size,
                                                       qkv_bias=True,drop_path=dpr[sum(depths[:3]):sum(depths[:3 + 1])],downsample=swin_transformer.PatchMerging if 3<self.num_layers-1 else None)#1536 4 7 7
 
-
         self.norm3 = nn.LayerNorm(self.num_features)
-
         self._freeze_stages()
         
 
@@ -545,21 +526,18 @@ class viedoswinRGB(nn.Module):
         x=self.pos_drop(x)
 
         x,xbfd1=self.swinaclayer1(x)
-
         x,xbfd2=self.swinaclayer2(x)
-
         x,xbfd3=self.swinaclayer3(x)
-
-
         x,xbfd4=self.swinaclayer4(x)
+
         x = rearrange(x, 'n c d h w -> n d h w c')
         x = self.norm3(x)
         x = rearrange(x, 'n d h w c -> n c d h w')
         return [xbfd2,xbfd3,x]
     
 
-
 modeldinobackbone=get_model('vit-large-p14_dinov2-pre_3rdparty',device='cpu', pretrained=True,backbone=dict(out_type='cls_token_and_featmap')).backbone
+
 class viedoDINORGB(nn.Module):
 
     def __init__(self,  pretrained=None,
@@ -603,7 +581,6 @@ class viedoDINORGB(nn.Module):
         out_feat = torch.stack(out_splits_feat, dim=2)# end feat dino 1024 t 46 46 if 640*640
 
         return [out_cls_token,out_feat]
-
 
                                        
     def load_my_state_dict(self, state_dict):

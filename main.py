@@ -52,8 +52,6 @@ def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
 
-
-
 def main():
     parser = argparse.ArgumentParser(description='Training single stage FPN with OHEM, resnet as backbone')
     parser.add_argument('--TASK', type=int, default=1, help="if task 1, using only 3 out of 15 videos from the training parition; if task 2, using all 15 videos from the training partition train_1")
@@ -190,17 +188,12 @@ def main():
                         type=int, help='minimum length of a tube')
     parser.add_argument('--TUBES_EVAL_THRESHS', default='0.2,0.5',
                         type=str, help='evaluation threshold for checking tube overlap at evaluation time, one can provide as many as one wants')
-    # parser.add_argument('--TRAIL_ID', default=0,
-    #                     type=int, help='eval TUBES_Thtrshold at evaluation time')
-    
-    ###
     parser.add_argument('--LOG_START', default=10, 
                         type=int, help='start loging after k steps for text/tensorboard') 
     parser.add_argument('--LOG_STEP', default=10, 
                         type=int, help='Log every k steps for text/tensorboard')
     parser.add_argument('--TENSORBOARD', default=1,
                         type=str2bool, help='Use tensorboard for loss/evalaution visualization')
-
     # Program arguments
     parser.add_argument('--MULTI_GPUS', default=True, type=str2bool, help='If  more than 0 then use all visible GPUs by default only one GPU used ') 
     parser.add_argument('--LOGIC', default='None', type=str, help='T-norm to be used in the loss')
@@ -216,14 +209,12 @@ def main():
     parser.add_argument('--modelswin',default=False,type=bool, help='swin')
     parser.add_argument('--modeldino',default=True,type=bool, help='dino')
     parser.add_argument('--pretrained_model_pathfpn',default="/root/autodl-tmp/road-dataset-master/ROAD-R-2023-Challenge-main_me/pretrainmodel/yolox_l.pth",type=str, help='fpn_path')
-
     train_dataset = None
     ulb_train_dataset = None
 
     ## Parse arguments
     args, unknown = parser.parse_known_args()
     args.DATETIME_NOW = datetime.datetime.now()
-
     if args.TASK == 1:
         args.labelled_videos = "2014-07-14-14-49-50_stereo_centre_01,2015-02-03-19-43-11_stereo_centre_04,2015-02-24-12-32-19_stereo_centre_04"
     elif args.TASK == 2:
@@ -241,9 +232,7 @@ def main():
     args = utils.set_args(args) # set directories and SUBSETS of datasets
     args.MULTI_GPUS = False if args.BATCH_SIZE == 1 else args.MULTI_GPUS
     args.log_ulb_gt_separately = args.MULTI_GPUS and (torch.cuda.device_count() == args.BATCH_SIZE) # if number of gpus and batch size are equal, the losses for the unlabelled (ulb) and labelled (gt) samples are logged separately in tensorboard
-    ## set random seeds and global settings
     torch.set_default_tensor_type('torch.FloatTensor')
-
     args = utils.create_exp_name(args)
 
     utils.setup_logger(args)
@@ -301,7 +290,6 @@ def main():
                         vtf.ToTensorStack(),
                         vtf.Normalize(mean=args.MEANS,std=args.STDS)])
     
-
     val_dataset = VideoDataset(args, train=False, transform=val_transform, skip_step=skip_step, full_test=full_test)
     logger.info('Done Loading Dataset Validation Dataset')
 
