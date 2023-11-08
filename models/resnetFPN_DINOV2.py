@@ -371,22 +371,6 @@ class YOLOPAFPN3DDINO(nn.Module):
         return cls_token,outputs
     
 
-
-            
-
-
-
-
-
-
-
-# config_path = '/root/miniconda3/lib/python3.8/site-packages/mmaction/.mim/configs/recognition/mvit/mvit-large-p244_u40_sthv2-rgb.py'
-# checkpoint_path = 'https://download.openmmlab.com/mmaction/v1.0/recognition/mvit/converted/mvit-large-p244_u40_sthv2-rgb_20221021-61696e07.pth' # 可以是本地路径
-
-# # 从配置文件和权重文件中构建模型
-# modelmvit = init_recognizer(config_path, checkpoint_path, device="cpu").backbone.cuda()
-
-
 # class videomvit(nn.Module):
 #     def __init__(self):
 #         super(videomvit,self).__init__()
@@ -395,9 +379,6 @@ class YOLOPAFPN3DDINO(nn.Module):
 #     def forward(self, x):
 #         x=self.flowbackbone(x)
 #         return x
-
-
-
 
 
 class viedoswinFlow(nn.Module):
@@ -635,7 +616,7 @@ class viedoDINORGB(nn.Module):
             out_splits_cls.append(out[0][0])
             out_splits_feat.append(out[0][1])
 
-        # 拼接回原始形状
+        # concat
         out_cls_token = torch.stack(out_splits_cls, dim=1) # end cls token dino
         out_feat = torch.stack(out_splits_feat, dim=2)# end feat dino 1024 t 46 46 if 640*640
 
