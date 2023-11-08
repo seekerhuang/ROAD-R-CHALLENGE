@@ -154,11 +154,9 @@ def setup_training(args, net):
         checkpoint2=torch.load(args.pretrained_model_path2)
         checkpoint_fpn=torch.load(args.pretrained_model_pathfpn)
         checkpoint_fpn=collections.OrderedDict(checkpoint_fpn['model'])
-        # # # # model.load_state_dict(checkpoint, strict=False)
-
-        # # # # load_checkpoint(model, checkpoint, strict=False,revise_keys=[r'^backbone\.'])
-        # backbone_stat_dict_rgb = {}
+   
         backbone_stat_dict_flow = {}
+        # modify the key's name
         for k in list(state_dict_flow.keys()):
     
             if k.startswith('backbone.patch_embed'):
@@ -178,7 +176,9 @@ def setup_training(args, net):
                 
             if k.startswith('backbone.norm3'):
                 backbone_stat_dict_flow[k.replace('backbone.norm3', 'backbone.backbone.flowbackbone.norm3')] = state_dict_flow[k]
+
         backbone_stat_dict_fpn = {}
+
         for k in list(checkpoint_fpn.keys()):
             
 
@@ -206,9 +206,8 @@ def setup_training(args, net):
             if k.startswith('backbone.C3_n4'):
                 backbone_stat_dict_fpn[k.replace('backbone.C3_n4', 'backbone.C3_n4')] = checkpoint_fpn[k]
 
+        # inflate the weight from 2d to 3d
         backbone_stat_dict_fpn=inflate_weight(backbone_stat_dict_fpn,1)
-
-
 
         backbone_stat_dict2 = {}
         for k in checkpoint2.keys():
@@ -221,7 +220,7 @@ def setup_training(args, net):
                     backbone_stat_dict2[k.replace('module.', '')] = checkpoint2[k]
                 if k.startswith('module.cls_heads') and ('cls_heads.6' not in k):
                     backbone_stat_dict2[k.replace('module.', '')] = checkpoint2[k]
-
+        # inflate and update the key 
         new_stat_dict={}
         backbone_stat_dict2=inflate_weight_channel(backbone_stat_dict2,256)
         for k in backbone_stat_dict2.keys():
@@ -229,7 +228,6 @@ def setup_training(args, net):
                 print(k,backbone_stat_dict2[k].shape)
         
         new_stat_dict.update(backbone_stat_dict2)
-        # new_stat_dict.update(backbone_stat_dict_rgb)
         new_stat_dict.update(backbone_stat_dict_flow)
         new_stat_dict.update(backbone_stat_dict_fpn)
 

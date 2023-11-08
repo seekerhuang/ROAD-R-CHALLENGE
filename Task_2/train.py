@@ -28,9 +28,7 @@ def get_time_dim(net):
     return None
 
 def inflate_weight(weight,time_dim):
-    # 沿着时间维度复制权重
-    # if time_dim is None:
-    #     time_dim = get_time_dim(net)
+    # inflate weight from 2d to 3d
     for k in weight.keys():
         if ('conv' in k) and ('bn' not in k) and ('lateral_conv0' not in k) and ('reduce_conv1' not in k) and ('C3_p4' not in k) and ('C3_n4' not in k):
             w = weight[k].detach().cpu().numpy()
@@ -69,32 +67,34 @@ def inflate_weight(weight,time_dim):
             weight[k]=torch.from_numpy(w_expanded)
     return weight
 
+
+
 def inflate_weight_channel(weight, num_channels):
-    # 获取权重的形状
+    # get the weight 
     for k in weight.keys():
         if ('cls_heads' in k) and ('cls_heads.6' not in k) and ('.bias' not in k):
             w = weight[k].detach().cpu().numpy()
             weight_shape = w.shape
 
-            # 创建新的权重数组，形状为 (num_channels+1, num_channels+1) + weight_shape[2:]
+            # create new weight array with extra channel
             inflated_shape = (num_channels + 1, num_channels + 1) + weight_shape[2:]
             print(inflated_shape)
             inflated_weight = np.zeros(inflated_shape)
 
-            # 将原始权重复制到新的权重数组中
+            # copy over the original weights
             inflated_weight[:num_channels, :num_channels] = w
 
-            # 计算前 num_channels 个通道的平均值
+            # calculate average of original weights for new channel
             average_channel = np.mean(w, axis=0)
             print("avg",average_channel.shape)
 
-            # 将平均值复制到新增的通道中
+            # copy over the average weights for the new channel
             inflated_weight[num_channels, :num_channels] = average_channel
             inflated_weight[:num_channels, num_channels] = average_channel
             inflated_weight[num_channels, num_channels] = np.mean(average_channel)
             print(inflated_weight.shape)
 
-            # 将 numpy 数组转换为 torch 张量
+            # convert to pytorch tensor
             weight[k] = torch.from_numpy(inflated_weight)
         if ('cls_heads' in k) and ('cls_heads.6' not in k) and ('.bias' in k):
             bias = weight[k].detach().cpu().numpy()
@@ -102,6 +102,7 @@ def inflate_weight_channel(weight, num_channels):
             weight[k] = torch.from_numpy(inflated_bias)
             
     return weight
+
 
 def setup_training(args, net):
     optimizer, _ , solver_print_str = get_optim(args, net)
@@ -131,7 +132,7 @@ def setup_training(args, net):
         backbone_stat_dict={}
         for k in list(checkpoint.keys()):
             
-            # 修改层名
+            # modify the layer name
             if k.startswith('module.'):
                 backbone_stat_dict[k.replace('module.', '')] = checkpoint[k]
 
@@ -151,7 +152,7 @@ def setup_training(args, net):
                                                                                                            logic=str(
                                                                                                                args.LOGIC),
                                                                                                            weight=args.req_loss_weight)
-        # log_dir = '{:s}/log-lo_tboard-{}_logic-{logic:s}_req-weight-{weight}'.format(args.log_dir, args.MODE, logic=str(args.LOGIC), weight=args.req_loss_weight)
+        
         args.sw = SummaryWriter(log_dir)
         logger.info('Created tensorboard log dir ' + log_dir)
 
@@ -170,7 +171,7 @@ def setup_training(args, net):
     
             if k.startswith('backbone.patch_embed'):
                 backbone_stat_dict_flow[k.replace('backbone.patch_embed', 'backbone.backbone.flowbackbone.patch_embed')] = state_dict_flow[k]
-            # 修改层名
+            # modify the layer name
             if k.startswith('backbone.layers.0'):    
                 backbone_stat_dict_flow[k.replace('backbone.layers.0', 'backbone.backbone.flowbackbone.swinaclayer1')] = state_dict_flow[k]
 
@@ -189,10 +190,9 @@ def setup_training(args, net):
         backbone_stat_dict_fpn = {}
         for k in list(checkpoint_fpn.keys()):
             
-            # 修改层名
+            # modify the layer name
             if k.startswith('backbone.lateral_conv0'):
                 backbone_stat_dict_fpn[k.replace('backbone.lateral_conv0', 'backbone.lateral_conv0')] = checkpoint_fpn[k]
-            # 修改层名
             if k.startswith('backbone.C3_p4'):    
                 backbone_stat_dict_fpn[k.replace('backbone.C3_p4', 'backbone.C3_p4')] = checkpoint_fpn[k]
 
@@ -229,9 +229,6 @@ def setup_training(args, net):
                     backbone_stat_dict2[k.replace('module.', '')] = checkpoint2[k]
                 if k.startswith('module.cls_heads') and ('cls_heads.6' not in k):
                     backbone_stat_dict2[k.replace('module.', '')] = checkpoint2[k]
-
-                # if k.startswith('module'):
-                #     backbone_stat_dict2[k.replace('module.', '')] = checkpoint2[k]
 
 
 
@@ -280,10 +277,7 @@ def train(args, net, train_dataset, val_dataset):
     val_data_loader = data_utils.DataLoader(val_dataset, args.BATCH_SIZE, num_workers=args.NUM_WORKERS,
                                             shuffle=False, pin_memory=True, collate_fn=custom_collate)
 
-    # TO REMOVE
-    # if not args.DEBUG_num_iter:
-    #     net.eval()
-    #     run_val(args, val_data_loader, val_dataset, net, 0, 0)
+
 
     iteration = 0
     scaler = GradScaler()

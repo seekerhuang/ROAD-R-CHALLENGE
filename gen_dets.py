@@ -72,24 +72,15 @@ def gen_dets(args, net, val_dataset):
         checkpoint2=torch.load(args.MODEL_PATH)
         backbone_stat_dict2 = {}
         for k in checkpoint2.keys():
-            # if k.startswith('module.anchors'):
-            #         backbone_stat_dict2[k.replace('module.', '')] = checkpoint2[k]
-                # backbone_stat_dict2[k] = checkpoint2[k]
-                # if k.startswith('module.anchors'):
-                #     backbone_stat_dict2[k.replace('module.', '')] = checkpoint2[k]
+         
             if k.startswith('module.'):
                 backbone_stat_dict2[k.replace('module.', '')] = checkpoint2[k]
-            # if k.startswith('module.reg_heads'):
-            #     backbone_stat_dict2[k.replace('module.', '')] = checkpoint2[k]
-            # if k.startswith('module.cls_heads') and ('cls_heads.6' not in k):
-            #     backbone_stat_dict2[k.replace('module.', '')] = checkpoint2[k]
-        # new_stat_dict.update(backbone_stat_dict2)
-        # print(backbone_stat_dict2)
+        
         result=net.load_state_dict(backbone_stat_dict2)
         print("missing")
-        print(result.missing_keys) # 打印模型中不存在的键名
+        print(result.missing_keys) # print the missing keys
         print("unexpcted")
-        print(result.unexpected_keys) # 打印预训练模型中不存在的键名
+        print(result.unexpected_keys) # print the unexpected keys
         
         logger.info('Finished loading model %d !' % epoch )
         
@@ -162,14 +153,12 @@ def perform_detection(args, net,  val_data_loader, val_dataset, iteration):
 
     nlt = 0
     processed_videos = []
-    processed_frames = {}  # 记录每个视频序列中已经检测过的帧
+    processed_frames = {}  # a dict to store the processed frames for each video
     txt_saved_detections_file = args.det_save_dir + "/log-lo_" + args.det_save_dir.split('/')[-6] + "_ROAD_R_predictions_"
     txt_saved_detections_file += args.MODEL_TYPE+"_logic-"+str(args.LOGIC)+"-"+str(args.req_loss_weight)+"_ag-"+str(args.agentness_th)+".txt"
     f = open(txt_saved_detections_file, 'w')
     net.eval()
     with torch.no_grad():
-        # for val_itr, (images, gt_boxes, gt_targets, ego_labels, batch_counts, img_indexs, wh) in enumerate(val_data_loader):
-        # for val_itr, (images, gt_boxes, gt_targets, batch_counts, img_indexs, wh) in enumerate(val_data_loader):
         for val_itr, (images, gt_boxes, gt_targets, batch_counts, img_indexs, wh, videonames, start_frames, is_pseudo_labelled) in enumerate(val_data_loader):
 
             if args.DEBUG_num_iter:
@@ -178,12 +167,8 @@ def perform_detection(args, net,  val_data_loader, val_dataset, iteration):
 
             torch.cuda.synchronize()
             t1 = time.perf_counter()
-
             batch_size = images.size(0)
-            
             images = images.cuda(0)
-            # flows = flows.cuda(0, non_blocking=True)
-            # decoded_boxes, confidence, ego_preds = net(images)
             decoded_boxes, confidence = net(images)
 
             confidence = activation(confidence)
@@ -195,9 +180,7 @@ def perform_detection(args, net,  val_data_loader, val_dataset, iteration):
                 torch.cuda.synchronize()
                 tf = time.perf_counter()
                 logger.info('Forward Time {:0.3f}'.format(tf-t1))
-            
-            # if videoname not in processed_frames:
-            #         processed_frames[videoname] = []
+
             for b in range(batch_size):
                 index = img_indexs[b]
                 annot_info = val_dataset.ids[index]
@@ -218,22 +201,13 @@ def perform_detection(args, net,  val_data_loader, val_dataset, iteration):
                     os.makedirs(save_dir)
                 count += 1
                 for s in range(seq_len):
-                    # if (start_frames[b] + 1 + s) in processed_frames.get(videonames[b], []):  # 如果当前帧已经被检测过，则跳过当前帧的检测
-                    #     continue
-                    # processed_frames.setdefault(videonames[b], []).append(start_frames[b] + 1 + s)  # 将当前帧添加到已检测帧的列表中
-                    if (start_frames[b] + 1 + s) in processed_frames[videoname]:  # 如果当前帧已经被检测过，则跳过当前帧的检测
-                        continue
-                    processed_frames[videoname].append(start_frames[b] + 1 + s)  # 将当前帧添加到已检测帧的列表中
-                    # print(processed_frames)
-                    # if ego_labels[b,s]>-1:
-                    #     ego_pds.append(ego_preds[b,s,:])
-                    #     ego_gts.append(ego_labels[b,s])
                     
-                    # gt_boxes_batch = gt_boxes[b, s, :batch_counts[b, s],:].numpy()
-                    # gt_labels_batch =  gt_targets[b, s, :batch_counts[b, s]].numpy()
+                    if (start_frames[b] + 1 + s) in processed_frames[videoname]:  # if the current frame has been detected,do not detect again
+                        continue
+                    processed_frames[videoname].append(start_frames[b] + 1 + s)  # add the current frame to the detected frame list
+
                     decoded_boxes_batch = decoded_boxes[b,s]
-                    # frame_gt = utils.get_individual_labels(gt_boxes_batch, gt_labels_batch[:,:1])
-                    # gt_boxes_all[0].append(frame_gt)
+
                     confidence_batch = confidence[b,s]
                     scores = confidence_batch[:, 0].squeeze().clone()
                     cls_dets, save_data = utils.filter_detections_for_dumping(args, scores, decoded_boxes_batch, confidence_batch)

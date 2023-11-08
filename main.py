@@ -216,13 +216,7 @@ def main():
     parser.add_argument('--modelswin',default=False,type=bool, help='swin')
     parser.add_argument('--modeldino',default=True,type=bool, help='dino')
     parser.add_argument('--pretrained_model_pathfpn',default="/root/autodl-tmp/road-dataset-master/ROAD-R-2023-Challenge-main_me/pretrainmodel/yolox_l.pth",type=str, help='fpn_path')
-    # parser.add_argument('--model_perms',default=[3, 4, 6, 3],type=list,help='model perms')
-    # parser.add_argument('--model_3d_layers',default=[[0, 1, 2], [0, 2], [0, 2, 4], [0, 1]],type=list,help='model 3d layers')
-    # parser.add_argument('--non_local_inds',default=[[], [], [], []],type=list,help='non local inds')
-    # parser.add_argument('--num_classes',default=25,type=int,help='num class')
-    # parser.add_argument('--num_classes_list',default=[1, 24],type=list,help='class list')
-    # parser.add_argument('--label_types',default=['action_ness', 'action'],type=list,help='label types')
-    # parser.add_argument('--num_label_types',default=2,type=int,help='num label types')
+
     train_dataset = None
     ulb_train_dataset = None
 

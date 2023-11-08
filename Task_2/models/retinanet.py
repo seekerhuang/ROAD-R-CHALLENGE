@@ -469,7 +469,7 @@ class DinoRetinaNet(nn.Module):
         # loc b t h w c
         # conf b t h w c
         loc = torch.cat([o.view(o.size(0), o.size(1), -1) for o in loc], 2)
-        #loc b t hwc+ hwc+ hwc+ hwc+ hwc
+        
         conf = torch.cat([o.view(o.size(0), o.size(1), -1) for o in conf], 2)
 
         flat_loc = loc.view(loc.size(0), loc.size(1), -1, 4)
@@ -564,10 +564,6 @@ class DinoRetinaNet(nn.Module):
                     nn.init.constant_(m.bias, 0)
 
         return layers    
-    
-    
-    
-    
     
     
 def build_retinanet(args):

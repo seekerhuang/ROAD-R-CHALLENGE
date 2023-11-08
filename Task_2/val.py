@@ -34,7 +34,7 @@ def val(args, net, val_dataset):
     
             if k.startswith('module.'):
                 backbone_stat_dict_flow[k.replace('module.', '')] = state_dict_flow[k]
-            # 修改层名
+
     net.load_state_dict(backbone_stat_dict_flow)
     mAP, ap_all, ap_strs = validate(args, net,  val_data_loader, val_dataset, args.EVAL_EPOCHS[0])
     label_types = args.label_types  #+ ['ego_action']
@@ -88,8 +88,7 @@ def validate(args, net,  val_data_loader, val_dataset, iteration_num):
             decoded_boxes, confidence = net(images)
             decoded_boxes=decoded_boxes.float()
             confidence=confidence.float()
-            # ego_preds = activation(ego_preds).cpu().numpy()
-            # ego_labels = ego_labels.numpy()
+
             confidence = activation(confidence)
 
             if print_time and val_itr%val_step == 0:
@@ -100,9 +99,6 @@ def validate(args, net,  val_data_loader, val_dataset, iteration_num):
             seq_len = gt_targets.size(1)
             for b in range(batch_size):
                 for s in range(seq_len):
-                    # if ego_labels[b,s]>-1:
-                    #     ego_pds.append(ego_preds[b,s,:])
-                    #     ego_gts.append(ego_labels[b,s])
                     
                     width, height = wh[b][0], wh[b][1]
                     gt_boxes_batch = gt_boxes[b, s, :batch_counts[b, s],:].numpy()
